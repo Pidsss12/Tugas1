@@ -20,6 +20,20 @@ class Task extends Model
     ];
 
     /**
+     * Model Events (Booted)
+     */
+    protected static function booted()
+    {
+        static::updated(function ($task) {
+            // Jika status tugas baru saja diubah menjadi 'selesai'
+            if ($task->isDirty('status') && $task->status === 'selesai') {
+                // Jalankan Job otomatis untuk generate PDF
+                \App\Jobs\GenerateTaskReport::dispatch($task);
+            }
+        });
+    }
+
+    /**
      * Check if the task is overdue (past deadline and not completed).
      */
     public function isOverdue(): bool

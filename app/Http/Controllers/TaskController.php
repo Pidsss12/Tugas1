@@ -151,4 +151,42 @@ class TaskController extends Controller
 
         return redirect()->route('tasks.index')->with('success', 'Tugas berhasil dihapus!');
     }
+
+    /**
+     * Download PDF Report Simulation
+     */
+    public function downloadReport()
+    { 
+        // Fitur Wajib #5: Queue Simulation
+        // Memanggil job untuk digenerate di background
+        \App\Jobs\GenerateTaskReport::dispatch();
+
+        return redirect()->route('tasks.index')->with('success', 'Permintaan download PDF laporan sedang diproses di background (Antrean Queue). File akan segera dikirim ke email atau tersedia di notifikasi Anda!');
+    }
+
+    /**
+     * Show/Download certificate for a specific completed task.
+     */
+    public function showCertificate(Task $task)
+    { 
+        if ($task->status !== 'selesai') {
+            abort(404, 'Tugas belum selesai.');
+        }
+
+        $reportName = 'laporan_tugas_' . $task->id . '.html';
+        $reportPath = public_path('reports');
+        $fullPath = $reportPath . '/' . $reportName;
+
+        if (!file_exists($fullPath)) {
+            if (!file_exists($reportPath)) {
+                mkdir($reportPath, 0777, true);
+            }
+            // Generate on the fly
+            \App\Jobs\GenerateTaskReport::dispatchSync($task);
+        }
+
+        return response()->file($fullPath, [
+            'Content-Type' => 'text/html',
+        ]);
+    }
 }

@@ -57,4 +57,29 @@ class AiAssistantController extends Controller
             ]
         ], 200);
     }
+
+    /**
+     * AI Web Chat Handler
+     * Digunakan oleh antarmuka web (Blade)
+     */
+    public function webChat(Request $request)
+    {
+        $userMessage = $request->input('message');
+        
+        // Simulasi balasan cerdas AI
+        $responses = [
+            "Tentu! Berdasarkan prioritas, selesaikan dulu tugas dengan label 'Tinggi' dan deadline besok.",
+            "Saya sarankan Anda membuat jadwal belajar 45 menit fokus, lalu 15 menit istirahat untuk tugas Matematika.",
+            "Tugas Kimia tentang Stoikiometri cukup rumit. Apakah Anda ingin saya ringkaskan rumus-rumus kuncinya?",
+            "Baik. Jika ada kesulitan saat memahami Sejarah Kemerdekaan, saya siap membuatkan peta konsep (mind map) untuk Anda."
+        ];
+        
+        $aiReply = $responses[array_rand($responses)];
+        
+        if (empty(trim($userMessage))) {
+            $aiReply = "Halo! Ada yang bisa saya bantu terkait tugas sekolah Anda hari ini?";
+        }
+
+        return redirect()->back()->with('ai_reply', $aiReply)->with('ai_user_message', $userMessage);
+    }
 }

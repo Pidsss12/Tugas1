@@ -136,7 +136,23 @@
             </div>
 
             <!-- Action buttons -->
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
+                @if(file_exists(public_path('reports/laporan_tugas_global.html')))
+                    <a href="{{ asset('reports/laporan_tugas_global.html') }}" target="_blank" title="Unduh Laporan PDF" class="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        <span class="hidden sm:inline">Unduh Laporan PDF</span>
+                    </a>
+                @endif
+
+                <a href="{{ route('tasks.report') }}" title="Generate Laporan PDF secara asinkron" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="hidden sm:inline">Download PDF</span>
+                </a>
+
                 <button onclick="openModal('add-task-modal')" class="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center space-x-2 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
@@ -280,8 +296,17 @@
                             </div>
 
                             <!-- Actions bar -->
-                            <div class="flex items-center justify-between gap-3 pt-1">
-                                <!-- Quick Status Switch Action -->
+                            <div class="flex flex-col gap-3 pt-1">
+                                <!-- Download Report Button (Only if completed) -->
+                                @if($task->status === 'selesai')
+                                    <a href="{{ route('tasks.certificate', $task) }}" target="_blank" class="w-full text-center py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 text-[11px] font-bold rounded-lg transition-colors flex items-center justify-center space-x-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        <span>Lihat Sertifikat (PDF)</span>
+                                    </a>
+                                @endif
+
+                                <div class="flex items-center justify-between w-full">
+                                    <!-- Quick Status Switch Action -->
                                 <form action="{{ route('tasks.status', $task) }}" method="POST" class="inline">
                                     @csrf
                                     @method('PATCH')
@@ -313,7 +338,8 @@
                                         </button>
                                     </form>
                                 </div>
-                            </div>
+                            </div> <!-- Closing for inner div flex items-center -->
+                            </div> <!-- Closing for outer div flex-col -->
                         </div>
                     </div>
                 @empty
@@ -589,6 +615,70 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateHeaderDate();
         });
+    </script>
+    <!-- ================= AI CHAT ASSISTANT ================= -->
+    
+    <!-- Floating Button -->
+    <button onclick="toggleAiChat()" class="fixed bottom-6 right-8 p-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-2xl hover:scale-105 transition-transform z-40 flex items-center justify-center group border border-indigo-400/30">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <span class="absolute -top-10 right-0 bg-slate-800 text-xs text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Tanya AI Assistant</span>
+    </button>
+
+    <!-- Chat Panel -->
+    <div id="ai-chat-panel" class="fixed bottom-24 right-8 w-80 bg-[#0c1322] border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden transform scale-0 origin-bottom-right transition-transform duration-300">
+        <div class="p-4 border-b border-slate-700/80 bg-gradient-to-r from-indigo-900/40 to-purple-900/40 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <h3 class="text-xs font-bold text-slate-200">AI Task Assistant</h3>
+            </div>
+            <button onclick="toggleAiChat()" class="text-slate-400 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="flex-1 p-4 overflow-y-auto max-h-64 flex flex-col space-y-3 text-xs bg-[#080d17]/50" id="chat-messages">
+            <!-- Initial Message -->
+            <div class="flex self-start max-w-[85%] bg-slate-800/80 p-2.5 rounded-xl rounded-tl-sm border border-slate-700/50">
+                <p class="text-slate-300">Halo! Ada yang bisa saya bantu terkait prioritas atau jadwal tugas sekolah Anda?</p>
+            </div>
+            
+            @if(session('ai_user_message'))
+                <div class="flex self-end max-w-[85%] bg-indigo-600/80 p-2.5 rounded-xl rounded-tr-sm">
+                    <p class="text-white">{{ session('ai_user_message') }}</p>
+                </div>
+            @endif
+            
+            @if(session('ai_reply'))
+                <div class="flex self-start max-w-[85%] bg-slate-800/80 p-2.5 rounded-xl rounded-tl-sm border border-slate-700/50">
+                    <p class="text-slate-300">{{ session('ai_reply') }}</p>
+                </div>
+                <!-- Auto-open chat if there's a reply -->
+                <script>document.addEventListener("DOMContentLoaded", () => toggleAiChat(true));</script>
+            @endif
+        </div>
+
+        <form action="{{ route('ai.webChat') }}" method="POST" class="p-3 bg-[#0c1322] border-t border-slate-700/80 flex items-center space-x-2">
+            @csrf
+            <input type="text" name="message" required placeholder="Ketik pesan ke AI..." class="flex-1 bg-[#080d17] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <button type="submit" class="p-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        function toggleAiChat(forceOpen = false) {
+            const panel = document.getElementById('ai-chat-panel');
+            if (forceOpen || panel.classList.contains('scale-0')) {
+                panel.classList.remove('scale-0');
+                panel.classList.add('scale-100');
+            } else {
+                panel.classList.remove('scale-100');
+                panel.classList.add('scale-0');
+            }
+        }
     </script>
 </body>
 </html>
